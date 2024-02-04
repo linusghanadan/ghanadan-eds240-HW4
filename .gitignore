@@ -1,1 +1,13 @@
+.Rproj.user
 
+# Data
+data/
+
+# .DS_Store
+.DS_Store
+**/.DS_Store
+
+# rendered files
+*.html
+Part1_files/
+Part2_files/

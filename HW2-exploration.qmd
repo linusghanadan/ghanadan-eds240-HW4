@@ -1,0 +1,83 @@
+---
+title: "Homework Assignment #2" 
+subtitle: "Part II"
+author: "Linus Ghanadan"
+date: 2024-02-03
+toc: true
+format: html
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r, include = FALSE}
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+##                                load packages                             ----
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+library(tidyverse)
+library(janitor)
+library(here)
+library(countrycode)
+```
+
+```{r, include = FALSE}
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+##                                import data                               ----
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# read in data
+methane_df <- readr::read_csv(here("data", "Non-CO2 Greenhouse Gas Data Tool  US EPAZoom inZoom out2000Copyright (c) 2015 Highsoft AS, Based on data from Natural EarthChart context menu.csv")) %>% 
+  clean_names() # convert column names to lower_case_snake format
+```
+
+```{r}
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+##                          data cleaning & wrangling                       ----
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# add continent column using countrycode package
+methane_df$continent <- countrycode(methane_df$country, "country.name", "continent")
+
+# reassign/remove NA continents
+methane_df$continent[which(methane_df$country == "Kosovo")] <- "Europe" # assign country "Kosovo" to continent "Europe"
+
+# convert data to long format
+methane_df_long <- methane_df %>% 
+  pivot_longer(cols = c("agriculture", "energy", "industrial_processes", "waste"), names_to = "sector", values_to = "emissions")
+
+```
+
+
+```{r}
+# exploratory visualization 1
+methane_df_long %>%
+  filter(sector == c("agriculture", "energy", "industrial_processes", "waste")) %>%
+  filter(!is.na(continent)) %>% 
+  ggplot(aes(x = emissions, y = reorder(continent, -emissions), fill = sector)) +
+  geom_bar(stat = "identity") +
+  theme_minimal()
+```
+
+```{r}
+# exploratory visualization 2
+methane_df_long %>%
+  top_n(40, wt = total_emissions) %>% 
+  ggplot(aes(y = reorder(country, -total_emissions),
+             x = emissions,
+             fill = sector)) +
+  geom_bar(stat = "identity") +
+  theme_minimal()
+
+```
+
+
+```{r}
+# exploratory visualization 3
+methane_df %>%
+  top_n(10, wt = agriculture) %>% 
+  ggplot(aes(y = reorder(country, -agriculture),
+             x = agriculture)) +
+  geom_bar(stat = "identity") +
+  theme_minimal()
+```
+
