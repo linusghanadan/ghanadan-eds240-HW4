@@ -9,7 +9,7 @@ editor_options:
   chunk_output_type: console
 ---
 
-```{r, include = FALSE}
+```{r, messages = FALSE}
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##                                load packages                             ----
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -20,7 +20,7 @@ library(here)
 library(countrycode)
 ```
 
-```{r, include = FALSE}
+```{r, messages = FALSE}
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##                                import data                               ----
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -90,19 +90,15 @@ ag_df_long %>%
   theme_minimal()
 ```
 
-1. What have you learned about your data? Have any potentially interesting patterns emerged? (5-8 sentences)
+**1. What have you learned about your data? Have any potentially interesting patterns emerged? (5-8 sentences)**
 
-I've learned a good deal about global methane emissions through my exploratory visualizations. From my first graph, 
+I've learned a good deal about global methane emissions through my exploratory visualizations. From my first graph, I can see that Asia was responsible for the most methane emissions in 2015, more than the next two continents (Americas and Europe) combined. I can also see from the graph that it seems as though agriculture is the highest emitting sector globally, based on the colors of the bars for each continent. In fact, Europe was the only continent where it was not the leading source. Coming first in Europe was energy, which appears to be the second leading source of global methane emissions. Furthermore, in my second graph, I plot the 10 highest emitting country sectors. China and the U.S. account for 7 of the 10 highest emitting sectors, with the other 3 sectors being Russia's energy sector and the agricultural sector of India and Brazil. Lastly, my final graph focuses on the sources behind agricultural methane emissions. Specifically, I plot the 10 highest emitting country sources of agricultural emissions. Unsurprisingly, livestock made up 5 of the 10 top country sources. However, in the U.S., emissions from cropland soil was actually higher than livestock emissions, which did surprise me.
 
-----
+**2. In HW #1, you outlined some questions that you wanted to answer using these data. Have you made any strides towards answering those questions? If yes, how so? If no, what next steps do you need to take (e.g. I need to create X plot type, I still need to track down Y data, I need to restructure existing data so that you can visualize it in Z ways, etc.)? (8-12 sentences)**
 
-2. In HW #1, you outlined some questions that you wanted to answer using these data. Have you made any strides towards answering those questions? If yes, how so? If no, what next steps do you need to take (e.g. I need to create X plot type, I still need to track down Y data, I need to restructure existing data so that you can visualize it in Z ways, etc.)?
-
-
-2
-Want to create percent column so can visualize in terms of percent of global emissions
+Yes, I've made pretty significant strides. My question was about the countries, sectors, and sources contributing the most to global methane emissions, and I definitely feel like my exploratory visualizations have allowed me to make significant strides toward answering that question. I now understand that agriculture and energy are the leading sources of global emissions, the U.S. and China have the highest emitting sectors, and that livestock seems to be the main driver of agricultural emissions. However, there are still many aspects of my question that are left unanswered from my visualizations. For one, I think that I would greatly benefit from being able to visualize the emissions in terms of percent of global methane emissions on all three graphs. Therefore, the next step that I plan to take is to figure out how to add a percent_global_emissions column to my data frames, so I can plot these values instead of aggregated emission values. This will allow me to provide a better understanding to my audience, since they would be able to make sense of the emissions values on a global scale. In addition, I also am thinking about focusing specifically on the main sources agricultural emissions for my final visualization, and this brings forward some additional tasks for me to complete. Specifically, I'm trying to figure out how to plot the top ten countries by agricultural emissions on a bar chart and filling color based on source. For this, I'd like to plot the European Union as a single country, which will require restructing my existing data to aggregate observations across EU countries into a single observation within my data frame.
 
 
-3
-having to make new dataframes for every single visualization
-deciding what question to address based on how much information i can show in a graph
+**3. What challenges do you foresee encountering with your data? These can be data wrangling and / or visualization challenges. (4-6 sentences)**
+
+For data wrangling, I definitely see myself coming across some further challenges. In this regard, I generally feel like it can be difficult just to decide how to go about wrangling the data in the most efficient way. During this assignment, I found myself doing things one way, before realizing that there was a more straightforward way that I could have done it. I'm hoping that I can get better at coming up with the best way to do things on my first try so I don't have to go back. The two data wrangling tasks that I mentioned in my previous answer do feel a little bit daunting to me right now, but I think this is just because I'm tired from doing this assignment. As for the visualization side, I don't really see any specific challenges moving forward at this point, though I'm sure there will be various things that I consider at future steps. I like the bar chart as a way to visualize rankings of the top agricultural country-level sources of methane emissions, where I put these values in terms of percent of global emissions so the audience can make better sense of them.
