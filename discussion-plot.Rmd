@@ -1,0 +1,66 @@
+---
+title: "discussion-plot"
+output: html_document
+date: "2024-02-07"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+##                                load packages                             ----
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+library(tidyverse)
+library(janitor)
+library(here)
+library(countrycode)
+```
+
+
+```{r}
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+##                                import data                               ----
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# read in data
+methane_df <- readr::read_csv(here("data", "Non-CO2 Greenhouse Gas Data Tool  US EPAZoom inZoom out2000Copyright (c) 2015 Highsoft AS, Based on data from Natural EarthChart context menu.csv")) %>% 
+  clean_names() # convert column names to lower_case_snake format
+```
+
+```{r}
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+##                          data cleaning & wrangling                       ----
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# add continent column using countrycode package
+methane_df$continent <- countrycode(methane_df$country, "country.name", "continent")
+methane_df$continent[which(methane_df$country == "Kosovo")] <- "Europe" # manually assign country "Kosovo" to continent "Europe"
+
+# create long format data frame for sectors
+sector_df_long <- methane_df %>% 
+  pivot_longer(cols = c("agriculture", "energy", "industrial_processes", "waste"), # remove sector columns
+               names_to = "sector", # new column sector containing names from original sector columns
+               values_to = "sector_emissions") %>% # new column sector_emissions containing values from original sector sectors columns
+  select("continent", "country", "total_emissions", "sector", "sector_emissions")
+
+# create long format data frame for agriculture sources
+ag_df_long <- methane_df %>%
+  pivot_longer(cols = c("livestock", "rice_cultivation", "soil_cropland", "other_ag_ch4_and_n2o"), # remove ag source columns
+               names_to = "source", # new column source containing names from original ag source columns
+               values_to = "source_emissions") %>% # new column source_emissions containing values from original ag source columns
+  select("continent", "country", "agriculture", "source", "source_emissions")
+```
+
+```{r}
+ag_df_long %>%
+  filter(!is.na(continent)) %>% 
+  filter(source == "livestock") %>% 
+  ggplot() +
+  geom_histogram(aes(x = source_emissions)) +
+  theme_minimal()
+```
+

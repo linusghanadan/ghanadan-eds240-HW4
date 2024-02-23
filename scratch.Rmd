@@ -1,0 +1,108 @@
+
+
+## treemap
+```{r}
+# # create long format data frame for agriculture sources
+# world_df_long <- world_df %>%
+#   pivot_longer(cols = c("livestock", "rice_cultivation", "soil_cropland", "other_ag_ch4_and_n2o", "biomass", "coal_mining", "oil_and_natural_gas_systems", "other_energy", "aerosols", "aluminum_production", "electronic_po"), # remove ag source columns
+#                names_to = "source", # new column source containing names from original ag source columns
+#                values_to = "source_emissions") %>% # new column source_emissions containing values from original ag source columns
+#   select("continent", "country", "agriculture", "source", "source_emissions")
+```
+
+
+```{r}
+# treemap(world_df,
+#         index = c("category", "subcategory"),
+#         vSize = "value",
+#         vColor = "value", # Variable that determines the color of the rectangles
+#         palette = "Blues", # Color palette
+#         title = "Sample Treemap",
+#         fontsize.title = 20,
+#         border.col = "white", # Color of the borders around rectangles
+#         border.lwds = 2 # Width of the borders
+# )
+```
+
+```{r}
+# create long format data frame for agriculture sources
+methane_df_long <- methane_pop_df %>%
+  pivot_longer(cols = c("livestock", "rice_cultivation", "soil_cropland", "other_ag_ch4_and_n2o", "biomass", "coal_mining", "oil_and_natural_gas_systems", "other_energy", "aerosols", "aluminum_production", "electronic_power_systems", "fire_protection", "flat_panel_display_manufacturing", "hcfc_22_production"), # remove ag source columns
+               names_to = "source", # new column source containing names from original ag source columns
+               values_to = "source_emissions") %>% # new column source_emissions containing values from original ag source columns
+  select("continent", "country", "agriculture", "source", "source_emissions")
+```
+
+
+
+radar plot
+```{r}
+top_six_df <- methane_df %>%
+  filter(!is.na(continent)) %>% 
+  slice_max(order_by = total_emissions, n = 6) %>% 
+  select(country, agriculture, energy, industrial_processes, waste)
+```
+
+```{r}
+# Assuming top_six_df is already created as per your snippet
+
+# Find the max values for each sector to set as chart limits
+max_values <- top_six_df %>%
+  summarise(across(-country, max)) %>%
+  unlist()
+
+# Find the min values for each sector to set as chart limits (assuming min is 0 for simplicity)
+min_values <- rep(0, length(max_values))
+
+# Add these min and max values as the first and last rows for radar chart limits
+top_six_df_radar <- rbind(min_values, top_six_df, max_values)
+
+# Adjusting the row names (important for the radar chart)
+rownames(top_six_df_radar) <- c("Min", top_six_df$country, "Max")
+
+```
+
+```{r}
+# Convert the dataframe for plotting (excluding the country column for the radar plot data)
+radar_data <- top_six_df_radar[, -1]
+
+# Ensure data is numeric for the radar plot
+radar_data <- data.frame(lapply(radar_data, as.numeric))
+
+# Plotting
+radarchart(radar_data, axistype=1,
+           # Customization options
+           pcol=rainbow(nrow(radar_data)-2), pfcol=rainbow(nrow(radar_data)-2, alpha=0.5), plwd=4, 
+           cglcol="grey", cglty=1, axislabcol="grey", caxislabels=seq(min(min_values), max(max_values), by=10), cglwd=0.8,
+           legend=rownames(top_six_df_radar)[-c(1, nrow(top_six_df_radar))]) # Adding legend for countries
+
+```
+
+```{r}
+# 
+# continent_colors <- c("Africa" = "#1c7293", "Asia" = "#8cb369", "Europe" = "#E9967A", "Americas" = "#ca3cff", "Oceania" = "#020122")
+# 
+# ## Create plot
+# ggplot(methane_pop_df, aes(y = emissions_pc, x = total_emissions, color = continent)) +
+#   geom_point(size = 1) +  # Plot all points
+#   scale_color_manual(values = continent_colors) +
+#   geom_text(data = subset(methane_pop_df, country == "China"), 
+#             aes(label = country, y = emissions_pc, x = total_emissions), 
+#             hjust = 1.2, vjust = 0.5, size = 3, fontface = "bold") + # Adjusts horizontal position to the left of the point
+#   geom_text(data = subset(methane_pop_df, country %in% c("United States", "Russia", "United Arab Emirates", "India", "Brazil", "Iran", "Argentina", "Brazil", "Indonesia", "Australia", "Canada", "Columbia", "Uzbekistan", "Cameroon", "Mexico", "Pakistan", "Central African Republic", "Bahrain", "Equatorial Guinea", "New Zealand", "Barbados", "Antigua and Barbuda", "Uruguay")), 
+#             aes(label = country, y = emissions_pc, x = total_emissions, color = continent),
+#             hjust = -0.2, size = 3, fontface = "bold") + # Adjusts horizontal position to the left of the point
+#   scale_x_continuous(limits = c(0, 2350)) +
+#   scale_y_continuous(limits = c(0, 0.0000125)) +
+#   labs(x = "Total Emissions (MtCO2eq)", y = "Per Capita Emissions (MtCO2eq)") +
+#   labs(title = "Global Methane Emissions (2015)", subtitle = "Per capita and total emissions for countries in <span style='color:#1c7293;'>**Africa**</span>, <span style='color:#8cb369;'>**Asia**</span>, <span style='color:#E9967A;'>**Europe**</span>, the <span style='color:#ca3cff;'>**Americas**</span>, and <span style='color:#020122;'>**Oceania**</span>.") +
+#   theme_minimal() +
+#   theme(plot.subtitle = ggtext::element_markdown()) +
+#   theme(panel.grid.major = element_blank(), # Removes major gridlines
+#         panel.grid.minor = element_blank()) + # Removes minor gridlines
+#   theme(axis.title.x = element_text(size = 10, color = "grey30"),  # Adjust x-axis text size and color
+#         axis.title.y = element_text(size = 10, color = "grey30")) +
+#   theme(legend.position = "none")
+
+```
+
