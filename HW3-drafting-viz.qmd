@@ -39,7 +39,6 @@ library(janitor)
 library(here)
 library(ggtext)
 library(treemapify)
-library(fmsb)
 
 # Set scipen option to a high value to avoid scientific notation
 options(scipen = 999)
@@ -197,7 +196,7 @@ ggplot(top_countries, aes(x = population, y = emissions_pc)) +
             aes(label = country, x = population, y = emissions_pc, size = total_emissions, color = country), hjust = -0.15, vjust = 2, size = 3, fontface = "bold") +
   scale_x_continuous(limits = c(0, 1500000000)) +
   labs(x = "Population", y = "Per Capita Emissions (MtCO2eq)") +
-  labs(subtitle = "53% of global methane emissions came from <span style='color:#721817;'>**China**</span>, <span style='color:#1c7293;'>**United States**</span>,<br><span style='color:#E9967A;'>**Russia**</span>, <span style='color:#020122;'>**European Union (27 countries)**</span>, <span style='color:#ca3cff;'>**India**</span>, and <span style='color:#8cb369;'>**Brazil**</span>") + # format colored HTML text in subtitle
+  labs(subtitle = "53% of global methane emissions in 2015 came from <span style='color:#721817;'>**China**</span>, the <span style='color:#1c7293;'>**United States**</span>,<br><span style='color:#E9967A;'>**Russia**</span>, the <span style='color:#020122;'>**European Union (27 countries)**</span>, <span style='color:#ca3cff;'>**India**</span>, and <span style='color:#8cb369;'>**Brazil**</span>") + # format colored HTML text in subtitle
   theme_minimal() +
   theme(plot.subtitle = element_text(size = 16)) + # change subtitle text size
   theme(panel.grid.major = element_blank(), # remove major gridlines
@@ -231,37 +230,41 @@ ggplot(top_countries, aes(x = population, y = emissions_pc)) +
 top_countries <- top_countries %>% 
   select("country", "agriculture", "energy", "industrial_processes", "waste")
 
-# Find the max values for each sector to set as chart limits
-max_values <- top_countries %>%
-  summarise(across(-country, max)) %>%
-  unlist()
 
-# Find the min values for each sector to set as chart limits (assuming min is 0 for simplicity)
-min_values <- rep(0, length(max_values))
+## Convert the data to long format for ggplot2
+top_countries_long <- top_countries %>%
+  pivot_longer(cols = c("agriculture", "energy", "industrial_processes", "waste"), 
+               names_to = "sector", values_to = "emissions")
 
-# Add these min and max values as the first and last rows for radar chart limits
-top_six_df_radar <- rbind(min_values, top_countries, max_values)
+top_countries_long <- top_countries_long %>% 
+  mutate(sector = case_when(
+    sector == "agriculture" ~ "Agriculture",
+    sector == "energy" ~ "Energy",
+    sector == "industrial_processes" ~ "Industrial Processes",
+    sector == "waste" ~ "Waste",
+    TRUE ~ sector))
 
-# Adjusting the row names (important for the radar chart)
-rownames(top_six_df_radar) <- c("Min", top_countries$country, "Max")
+top_countries_long <- top_countries_long %>% 
+  mutate(country = case_when(
+    country == "United States" ~ "US",
+    country == "European Union" ~ "EU",
+    TRUE ~ country))
+
+# Manually reorder the country factor
+top_countries_long$country <- factor(top_countries_long$country, 
+                                     levels = c("China", "US", "Russia", "EU", "India", "Brazil"))
+
+## Plot the data
+ggplot(top_countries_long, aes(x = country, y = emissions, fill = sector)) +
+  geom_col(position = "dodge") +
+  labs(y = "Emissions (MtCO2eq)", title = "53% of global methane emissions in 2015 came\nfrom five countries and the European Union", fill = "Sector") +
+  theme_minimal() +
+  theme(axis.title.x = element_blank()) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_fill_brewer(palette = "Pastel1") # Use a color palette that is distinct and visually appealing
+
+
 
 ```
-
-```{r}
-# Convert the dataframe for plotting (excluding the country column for the radar plot data)
-radar_data <- top_six_df_radar[, -1]
-
-# Ensure data is numeric for the radar plot
-radar_data <- data.frame(lapply(radar_data, as.numeric))
-
-# Plotting
-radarchart(radar_data, axistype=1,
-           # Customization options
-           pcol=rainbow(nrow(radar_data)-2), pfcol=rainbow(nrow(radar_data)-2, alpha=0.5), plwd=4, 
-           cglcol="grey", cglty=1, axislabcol="grey", caxislabels=seq(min(min_values), max(max_values), by=10), cglwd=0.8,
-           legend=rownames(top_six_df_radar)[-c(1, nrow(top_six_df_radar))]) # Adding legend for countries
-
-```
-
 
 
