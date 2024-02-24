@@ -98,7 +98,7 @@ world_df_long <- world_df %>%
                values_to = "source_emissions") %>% # new column source_emissions containing values from original source columns
   select("source", "source_emissions")
 
-# create sector columnthat populates according to specified source
+# create sector column that populates according to specified source
 world_df_long <- world_df_long %>%
   mutate(sector = case_when(
     source %in% c("livestock", "rice_cultivation", "soil_cropland", "other_ag_ch4_and_n2o") ~ "agriculture",
@@ -156,15 +156,15 @@ world_df_long <- world_df_long %>%
    mutate(sector = factor(sector, levels = c("Agriculture (48%)", "Energy (29%)", "Waste (13%)", "Industrial Processes (10%)")))
 
 # create treemap
-ggplot(world_df_long, aes(area = source_emissions, fill = sector, label = source, subgroup = sector)) +
+ggplot(world_df_long, aes(area = source_emissions, fill = sector, label = source, subgroup = sector)) + # using sector for coloring and as subgroups (appear in legend), labeling based on source
   geom_treemap() +
-  geom_treemap_text(color = "white", place = "centre", grow = TRUE, reflow = TRUE, family = "barlow") +
-  scale_fill_manual(values = custom_colors) +
+  geom_treemap_text(color = "white", place = "center", grow = TRUE, reflow = TRUE, family = "barlow") + # for text inside the treemap, allow to grow with grow = TRUE, flow onto next line with reflow = TRUE, and set font family to barlow
+  scale_fill_manual(values = custom_colors) +  # apply custom color palette
   labs(title = "What sources emitted the most methane in 2015?") +
   theme(legend.position = "top",
       legend.title = element_blank(), 
-      legend.text = element_text(size = 10, family = "barlow", face = "bold"),
-      plot.title = element_text(family = "merri sans", face = "bold", size = 12, hjust = 0.5))
+      legend.text = element_text(size = 10, family = "barlow", face = "bold"), # set legend font to barlow
+      plot.title = element_text(family = "merri sans", face = "bold", size = 12, hjust = 0.5)) # set title font to merri sans
 ```
 
 
@@ -193,7 +193,7 @@ eu_countries <- c("Austria", "Belgium", "Bulgaria", "Croatia", "Cyprus", "Czech 
                   "Ireland", "Italy", "Latvia", "Lithuania", "Luxembourg", "Malta", "Netherlands", 
                   "Poland", "Portugal", "Romania", "Slovakia", "Slovenia", "Spain", "Sweden")
 
-# filter the dataframe for EU countries
+# filter for EU countries
 eu_methane_pop_df <- methane_pop_df %>% filter(country %in% eu_countries)
 
 # summarize the filtered data frame to create a new data frame
@@ -227,37 +227,38 @@ country_colors <- c("United States" = "#020122", "Brazil" = "#020122", "Russia" 
 
 # create scatter plot
 ggplot(top_countries, aes(x = population, y = emissions_pc)) +
-  geom_point(aes(size = total_emissions, color = country)) +
-  scale_color_manual(values = country_colors) +
-  geom_text(data = top_countries,
-            aes(label = country, x = population, y = emissions_pc, size = total_emissions, color = country), hjust = -0.25, vjust = 2, size = 3, family = "barlow", fontface = "bold") +
+  geom_point(aes(size = total_emissions, color = country)) + # sizing points by total emissions and coloring points by country
+  scale_color_manual(values = country_colors) + # applying custom color palette
+  geom_text(data = top_countries, # labeling countries in plot
+            aes(label = country, x = population, y = emissions_pc, size = total_emissions, color = country), # label according to country
+            hjust = -0.25, vjust = 2, size = 3, family = "barlow", fontface = "bold") + # adjust label location and set font to barlow
   scale_x_continuous(limits = c(0, 1500000000)) +
   labs(x = "Population", y = "Per Capita Emissions (MtCO2eq)") +
-  labs(title = "53% of global methane emissions in 2015 came from\n5 highest-emitting countries and the European Union (27 countries)") + # format colored HTML text in subtitle
+  labs(title = "53% of global methane emissions in 2015 came from\n5 highest-emitting countries and the European Union (27 countries)") +
   theme_minimal() +
   theme(panel.grid.major = element_blank(), # remove major gridlines
         panel.grid.minor = element_blank()) + # removes minor gridlines
-  theme(axis.title.x = element_text(family = "barlow", face = "bold", size = 10, color = "grey30"),
-        axis.title.y = element_text(family = "barlow", face = "bold", size = 10, color = "grey30"),
-        axis.text.x = element_text(family = "barlow", face = "bold"),
-        axis.text.y = element_text(family = "barlow", face = "bold")) +
+  theme(axis.title.x = element_text(family = "barlow", face = "bold", size = 10, color = "grey30"), # adjust font, fontface, size, and color of x axis title text
+        axis.title.y = element_text(family = "barlow", face = "bold", size = 10, color = "grey30"), # adjust font, fontface, size, and color of y axis title text
+        axis.text.x = element_text(family = "barlow", face = "bold"), # adjust font, fontface, size, and color of x axis text
+        axis.text.y = element_text(family = "barlow", face = "bold")) + # adjust font, fontface, size, and color of y axis text
   theme(axis.line = element_line(color = "black", size = 0.5)) + # add axis line
-  theme(plot.title = element_text(family = "merri sans", size = 12, hjust = 0.5)) +
+  theme(plot.title = element_text(family = "merri sans", size = 12, hjust = 0.5)) + # adjust font, size, and position of plot title
   theme(legend.position = "none") +
   annotate(
-    geom = "text",
-    x = 670000000, y = 0.000033,
+    geom = "text", # create text annotation
+    x = 670000000, y = 0.000033, # specify where text annotation starts
     label = "Size of circle represents\ntotal emissions in 2015",
     hjust = "left",
     size = 4,
-    family = "merri sans") + # create text annotation
+    family = "merri sans") +
   annotate(
-    geom = "curve",
-    x = 650000000, xend = 420000000,
+    geom = "curve", # create curved arrow
+    x = 650000000, xend = 420000000, # specify start and end point
     y = 0.000033, yend = 0.000042,
     arrow = arrow(length = unit(0.3, "cm")),
-    curvature = -0.3,
-    size = 0.4) # create curved arrow
+    curvature = -0.3, # adjust curvature
+    size = 0.4)
 ```
 
 
@@ -293,7 +294,7 @@ top_countries_long <- top_countries_long %>%
 top_countries_long$sector <- factor(top_countries_long$sector, 
                                     levels = c("Agriculture", "Energy", "Waste", "Industrial Processes"))
 
-# manually reorder the country factor (for plotting)
+# re-order countries as factors (for plotting)
 top_countries_long$country <- factor(top_countries_long$country, 
                                      levels = c("China", "US", "Russia", "EU", "India", "Brazil"))
 
@@ -305,19 +306,31 @@ custom_colors <- c(
   "Industrial Processes" = "#FF8C00")
 
 ## create dodged column plot
-ggplot(top_countries_long, aes(x = country, y = emissions, fill = sector)) +
-  geom_col(position = "dodge") +
-  labs(y = "Emissions (MtCO2eq)", title = "Sources of emissions in 5 highest-emitting\ncountries and the European Union", fill = "Sector") +
-  scale_fill_manual(values = custom_colors) +
+ggplot(top_countries_long, aes(x = country, y = emissions, fill = sector)) + # fill columns based on sector
+  geom_col(position = "dodge") + # specify dodged position so to create space between countries
+  labs(y = "Emissions (MtCO2eq)", title = "Sources of emissions in 5 highest-emitting\ncountries and the European Union", fill = "Sector") + # specify legend title with fill = "Sector"
+  scale_fill_manual(values = custom_colors) + # apply custom color palette
   theme_minimal() +
   theme(axis.title.x = element_blank(),
-        axis.title.y = element_text(family = "barlow", face = "bold", color = "grey30"),
-        axis.text.x = element_text(family = "barlow", face = "bold"),
-        axis.text.y = element_text(family = "barlow", face = "bold"),
-        legend.position = c(0.85, 0.85),
-        legend.text = element_text(color = "grey30", face = "bold", size = 9, family = "barlow"),
+        axis.title.y = element_text(family = "barlow", face = "bold", color = "grey30"), # adjust font, fontface, size, and color of y axis title text
+        axis.text.x = element_text(family = "barlow", face = "bold"), # adjust font and fontface of x axis text
+        axis.text.y = element_text(family = "barlow", face = "bold"), # adjust font and fontface of y axis text
+        legend.position = c(0.85, 0.85), # specify legend position
+        legend.text = element_text(color = "grey30", face = "bold", size = 9, family = "barlow"), # adjust font, fontface, size, and color of y axis legend title
         legend.title = element_blank(),
-        plot.title = element_text(family = "merri sans", size = 12, hjust = 0.5))
+        plot.title = element_text(family = "merri sans", size = 12, hjust = 0.5)) # adjust font, size, and position of plot title
 ```
 
+## Questions
 
+1. What challenges did you encounter or anticipate encountering as you continue to build / iterate on your visualizations in R?
+
+[It was a major challenge trying to format the treemap the way that I wanted it based on the Our World in Data treemap that I chose as one of example visualizations. I thought that I'd be able to avoid having a legend, but I ultimately gave up trying because of the obstacles. I wanted to place colored text beside each subgroup instead of having a title, but is seemingly impossible in ggplot2 because of the inability to set margins only on the axis but not the entire plot (including the title). In addition, not being able to color the text with embedded HTML code while also updating the font using my imported fonts was very frustrating for me as well.]{style="color:navy;"}
+
+2. What ggplot extension tools / packages do you need to use to build your visualizations? Are there any that we haven’t covered in class that you’ll be learning how to use for your visualizations?
+
+[In addition to ggplot2, I will also be using {treemapify}, {ggtext}, and {showtext} to build my visualizations. We didn't explicitly cover {treemapify} during class, but I was able to make good use of it for this HW by reading the documentation.]{style="color:navy;"}
+
+3. What feedback do you need from the instructional team and / or your peers to ensure that your intended message is clear?
+
+[In particular, I'd like feedback on my plot titles, how I formatted my legends / annotations, and my decisions regarding font family and font face.]{style="color:navy;"}
