@@ -10,3 +10,7 @@ data/
 # rendered files
 *.html
 HW2-exploration_files/
+HW3-drafting-viz_files/
+
+# folders
+images/

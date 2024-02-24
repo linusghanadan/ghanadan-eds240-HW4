@@ -106,3 +106,10 @@ radarchart(radar_data, axistype=1,
 
 ```
 
+```{r}
+
+# add continent column using countrycode package
+methane_df$continent <- countrycode::countrycode(methane_df$country, "country.name", "continent")
+methane_df$continent[which(methane_df$country == "Kosovo")] <- "Europe" # manually assign country "Kosovo" to continent "Europe"
+```
+

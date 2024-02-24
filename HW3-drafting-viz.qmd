@@ -10,6 +10,8 @@ editor_options:
   chunk_output_type: console
 ---
 
+## Overarching question & sub-questions for infographic
+
 **Overarching question for infographic:**
 - Where are global methane emissions coming from?
 **Sub-questions to be answered by infographic components:**
@@ -22,25 +24,48 @@ My overarching question and first two sub-questions were also mentioned in my fi
 
 To answer these questions, I have two data sets, one containing population by country from the {gt} package, and another from the U.S. EPA containing 2015 country-level data on total methane emissions, emissions by four sectors (agriculture, energy, industial processes, and waste). After joining these data sets, I was able to calculate total methane emissions per capita at the country-level. Now, I have 8 variables that I want to focus on visualizing: country, total methane emissions, population, per capita methane emissions, and methane emissions from agriculture, energy, industrial processes, and waste.
 
+## Two example data visualizations to draw from
+
+[Treemap example](https://ourworldindata.org/contributed-most-global-co2)
+
+In this treemap, I like how the continents are labeled outside the treemap with aggregate numbers, as it provides more information while also avoiding the use of a legend. I want to label my sectors of methane emissions in this way for the treemap in my final HW4.
+
+[Scatter plot example](https://github.com/Ijeamakaanyene/tidytuesday/blob/master/outputs/2020-07_nfl_stadiums_redux.png)
+
+In this side-by-side bar plot and scatter plot, I like the clean use of color labeling to highlight certain teams. I may try to find a way to use color in a consistant and clean way such as this in the final version of my scatter plot or in the bar plot that I'm planning to make. I also like the lack of grid lines in the scatterplot, which I plan to incorporate.
+
+## Sketched drafts for my three graphs
+
+![Alt text](images/plot1.png)
+![Alt text](images/plot2.png)
+![Alt text](images/plot3.png)
+
+## Coded drafts for my three graphs
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(include = TRUE, message = FALSE, warning = FALSE)
 ```
 
 
-
 ```{r}
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-##                                load packages                             ----
+##                                setup                                     ----
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-library(tidyverse)
-library(janitor)
 library(here)
+library(tidyverse)
 library(ggtext)
 library(treemapify)
+library(showtext)
 
-# Set scipen option to a high value to avoid scientific notation
+# import fonts
+font_add_google(name = "Outfit", family = "outfit")
+font_add_google(name = "Barlow Condensed", regular.wt = 200, family = "barlow")
+
+# enable {showtext} for rendering
+showtext_auto()
+
+# set scipen option to a high value to avoid scientific notation
 options(scipen = 999)
 ```
 
@@ -51,71 +76,43 @@ options(scipen = 999)
 
 # read in data
 methane_df <- readr::read_csv(here("data", "Non-CO2 Greenhouse Gas Data Tool  US EPAZoom inZoom out2000Copyright (c) 2015 Highsoft AS, Based on data from Natural EarthChart context menu.csv")) %>% 
-  clean_names() # convert column names to lower_case_snake format
+  janitor::clean_names() # convert column names to lower_case_snake format
 ```
 
 
 ```{r}
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-##                          data cleaning & wrangling                       ----
+##                          plot 1 wrangling                                ----
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # put world aggregate values in its own data frame
 world_df <- methane_df[190, ]
 
-# add continent column using countrycode package
-methane_df$continent <- countrycode::countrycode(methane_df$country, "country.name", "continent")
-methane_df$continent[which(methane_df$country == "Kosovo")] <- "Europe" # manually assign country "Kosovo" to continent "Europe"
-
-# loading in country population data from gt package
-pop_df <- gt::countrypops
-pop_df <- pop_df %>% 
-  rename(region = country_code_3) %>% # renaming column to join by
-  filter(year == 2015)
-
-# join methane and population to make new data frame
-methane_pop_df <- left_join(x = methane_df, y = pop_df, by = "region") 
-
-# create column for per capita emissions 
-methane_pop_df <- methane_pop_df %>% 
-  mutate(emissions_pc = total_emissions / population) %>% 
-  filter(!is.na(continent)) %>% # remove NAs to get rid of row for world total
-  select(-region, -continent, -country_name, -country_code_2, -year) # remove irrelevant columns
-
-
-
-```
-
-
-```{r}
 # create long format data frame
 world_df_long <- world_df %>%
   pivot_longer(cols = c("livestock", "rice_cultivation", "soil_cropland", "other_ag_ch4_and_n2o", "biomass", "coal_mining", "oil_and_natural_gas_systems", "other_energy", "aerosols", "aluminum_production", "electronic_power_systems", "fire_protection", "flat_panel_display_manufacturing", "foams_mfg_use_and_disposal", "hcfc_22_production", "magnesium_production", "nitric_and_adipic_acid_production", "photovoltaic_cell_manufacturing", "refrigeration_and_air_conditioning", "semiconductor_manufacturing", "solvent_use", "other_ip_ch4_and_n2o", "landfills", "wastewater", "other_waste_ch4_and_n2o"), # remove source columns
                names_to = "source", # new column source containing names from original source columns
                values_to = "source_emissions") %>% # new column source_emissions containing values from original source columns
   select("source", "source_emissions")
-```
 
-
-
-
-```{r}
+# create sector columnthat populates according to specified source
 world_df_long <- world_df_long %>%
   mutate(sector = case_when(
     source %in% c("livestock", "rice_cultivation", "soil_cropland", "other_ag_ch4_and_n2o") ~ "agriculture",
     source %in% c("biomass", "coal_mining", "oil_and_natural_gas_systems", "other_energy") ~ "energy",
     source %in% c("aerosols", "aluminum_production", "electronic_power_systems", "fire_protection", "flat_panel_display_manufacturing", "foams_mfg_use_and_disposal", "hcfc_22_production", "magnesium_production", "nitric_and_adipic_acid_production", "photovoltaic_cell_manufacturing", "refrigeration_and_air_conditioning", "semiconductor_manufacturing", "solvent_use", "other_ip_ch4_and_n2o") ~ "industrial_processes",
     source %in% c("landfills", "wastewater", "other_waste_ch4_and_n2o") ~ "waste",
-    TRUE ~ NA_character_ # Assign NA for any source that doesn't match the above categories
-  ))
+    TRUE ~ NA_character_)) # assign NA if any other source
 
 ```
 
 
-
 ```{r}
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+##                          plot 1 visualization                            ----
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-
+# edit names of sources (for plotting)
 world_df_long <- world_df_long %>%
   mutate(source = case_when(
     source == "soil_cropland" ~ "Soil",
@@ -134,6 +131,7 @@ world_df_long <- world_df_long %>%
     source == "other_ip_ch4_and_n2o" ~ "Other",
     TRUE ~ source))
 
+# edit names of sectors (for plotting)
 world_df_long <- world_df_long %>%
   mutate(sector = case_when(
     sector == "agriculture" ~ "Agriculture",
@@ -142,25 +140,48 @@ world_df_long <- world_df_long %>%
     sector == "waste" ~ "Waste",
     TRUE ~ sector))
 
-```
+# Define a custom color palette
+custom_colors <- c(
+  "Agriculture" = "#1f77b4",
+  "Energy" = "#B22222",
+  "Industrial Processes" = "#FF8C00",
+  "Waste" = "#2ca02c")
 
-```{r}
+# create treemap
 ggplot(world_df_long, aes(area = source_emissions, fill = sector, label = source, subgroup = sector)) +
   geom_treemap() +
-  geom_treemap_text(fontface = "italic", colour = "white", place = "centre", grow = TRUE, reflow = T) +
-  labs(title = "2015 global methane emissions by sector") +
-  theme(legend.position = "top", # Move legend to top
-      legend.title = element_blank(), 
-      legend.text = element_text(size = 10),
-      plot.title = element_text(hjust = 0.5))
+  geom_treemap_text(color = "white", place = "centre", grow = TRUE, reflow = TRUE) +
+  scale_fill_manual(values = custom_colors) +
+  labs(title = "What sources emitted the most methane in 2015?",
+     subtitle = "<span style='color:#1f77b4; letter-spacing: normal; word-spacing: normal;'>**Agriculture (52%)**</span>, <span style='color:#B22222; letter-spacing: normal; word-spacing: normal;'>**Energy (25%)**</span>, <span style='color:#2ca02c; letter-spacing: normal; word-spacing: normal;'>**Waste (16%)**</span>,<br>and <span style='color:#FF8C00; letter-spacing: normal; word-spacing: normal;'>**Industrial Processes (14%)**</span> are the four sectors of emission sources") +
+  theme(plot.subtitle = element_markdown()) +
+  theme(legend.position = "none")
+        # legend.title = element_blank(), 
+        # legend.text = element_text(size = 10, family = "outfit"),
+        # plot.title = element_text(face = "bold", size = 18, hjust = 0.5))
+  
 ```
-
 
 
 ```{r}
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-##                          plot 2                       ----
+##                          plot 2 wrangling                                ----
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# loading in country population data from gt package
+pop_df <- gt::countrypops
+pop_df <- pop_df %>% 
+  rename(region = country_code_3) %>% # renaming column to join by
+  filter(year == 2015)
+
+# join methane and population to make new data frame
+methane_pop_df <- left_join(x = methane_df, y = pop_df, by = "region") 
+
+# create column for per capita emissions 
+methane_pop_df <- methane_pop_df %>% 
+  mutate(emissions_pc = total_emissions / population) %>% 
+  filter(!is.na(continent)) %>% # remove NAs to get rid of row for world total
+  select(-region, -continent, -country_name, -country_code_2, -year) # remove irrelevant columns
 
 # create list of EU countries
 eu_countries <- c("Austria", "Belgium", "Bulgaria", "Croatia", "Cyprus", "Czech Republic", 
@@ -180,10 +201,60 @@ eu_summary_df$country <- "European Union"
 # bind row for EU to joined data frame of methane and population
 methane_pop_df <- rbind(eu_summary_df, methane_pop_df)
 
-# obtain top 6 countries
+# obtain top 6 countries and select relevant columns
 top_countries <- methane_pop_df %>%
   arrange(desc(total_emissions)) %>%
-  slice(1:6)
+  slice(1:6) %>% 
+  select("country", "agriculture", "energy", "industrial_processes", "waste")
+
+# Convert the data to long format
+top_countries_long <- top_countries %>%
+  pivot_longer(cols = c("agriculture", "energy", "industrial_processes", "waste"), 
+               names_to = "sector", values_to = "emissions")
+
+```
+
+
+```{r}
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+##                          plot 2 visualization                            ----
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# rename sectors (for plotting)
+top_countries_long <- top_countries_long %>% 
+  mutate(sector = case_when(
+    sector == "agriculture" ~ "Agriculture",
+    sector == "energy" ~ "Energy",
+    sector == "industrial_processes" ~ "Industrial Processes",
+    sector == "waste" ~ "Waste",
+    TRUE ~ sector))
+
+# rename countries (for plotting)
+top_countries_long <- top_countries_long %>% 
+  mutate(country = case_when(
+    country == "United States" ~ "US",
+    country == "European Union" ~ "EU",
+    TRUE ~ country))
+
+# manually reorder the country factor (for plotting)
+top_countries_long$country <- factor(top_countries_long$country, 
+                                     levels = c("China", "US", "Russia", "EU", "India", "Brazil"))
+
+## create dodged column plot
+ggplot(top_countries_long, aes(x = country, y = emissions, fill = sector)) +
+  geom_col(position = "dodge") +
+  labs(y = "Emissions (MtCO2eq)", title = "53% of global methane emissions in 2015 came\nfrom five countries and the European Union", fill = "Sector") +
+  scale_fill_manual(values = custom_colors) +
+  theme_minimal() +
+  theme(axis.title.x = element_blank()) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+```{r}
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+##                          plot 3 visualization                            ----
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # define color palette
 country_colors <- c("United States" = "#1c7293", "Brazil" = "#8cb369", "Russia" = "#E9967A", "India" = "#ca3cff", "European Union" = "#020122", "China" = "#721817")
@@ -219,51 +290,6 @@ ggplot(top_countries, aes(x = population, y = emissions_pc)) +
     arrow = arrow(length = unit(0.3, "cm")),
     curvature = -0.3,
     size = 0.4) # create curved arrow
-
-```
-
-```{r}
-##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-##                          plot 3                       ----
-##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-top_countries <- top_countries %>% 
-  select("country", "agriculture", "energy", "industrial_processes", "waste")
-
-
-## Convert the data to long format for ggplot2
-top_countries_long <- top_countries %>%
-  pivot_longer(cols = c("agriculture", "energy", "industrial_processes", "waste"), 
-               names_to = "sector", values_to = "emissions")
-
-top_countries_long <- top_countries_long %>% 
-  mutate(sector = case_when(
-    sector == "agriculture" ~ "Agriculture",
-    sector == "energy" ~ "Energy",
-    sector == "industrial_processes" ~ "Industrial Processes",
-    sector == "waste" ~ "Waste",
-    TRUE ~ sector))
-
-top_countries_long <- top_countries_long %>% 
-  mutate(country = case_when(
-    country == "United States" ~ "US",
-    country == "European Union" ~ "EU",
-    TRUE ~ country))
-
-# Manually reorder the country factor
-top_countries_long$country <- factor(top_countries_long$country, 
-                                     levels = c("China", "US", "Russia", "EU", "India", "Brazil"))
-
-## Plot the data
-ggplot(top_countries_long, aes(x = country, y = emissions, fill = sector)) +
-  geom_col(position = "dodge") +
-  labs(y = "Emissions (MtCO2eq)", title = "53% of global methane emissions in 2015 came\nfrom five countries and the European Union", fill = "Sector") +
-  theme_minimal() +
-  theme(axis.title.x = element_blank()) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  scale_fill_brewer(palette = "Pastel1") # Use a color palette that is distinct and visually appealing
-
-
 
 ```
 
