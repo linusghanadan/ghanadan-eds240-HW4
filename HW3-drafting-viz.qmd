@@ -59,7 +59,7 @@ library(treemapify)
 library(showtext)
 
 # import fonts
-font_add_google(name = "Outfit", family = "outfit")
+font_add_google(name = "Merriweather Sans", family = "merri sans")
 font_add_google(name = "Barlow Condensed", regular.wt = 200, family = "barlow")
 
 # enable {showtext} for rendering
@@ -88,6 +88,9 @@ methane_df <- readr::read_csv(here("data", "Non-CO2 Greenhouse Gas Data Tool  US
 # put world aggregate values in its own data frame
 world_df <- methane_df[190, ]
 
+# remove world aggregated values from methane_df
+methane_df <- methane_df[-190, ]
+
 # create long format data frame
 world_df_long <- world_df %>%
   pivot_longer(cols = c("livestock", "rice_cultivation", "soil_cropland", "other_ag_ch4_and_n2o", "biomass", "coal_mining", "oil_and_natural_gas_systems", "other_energy", "aerosols", "aluminum_production", "electronic_power_systems", "fire_protection", "flat_panel_display_manufacturing", "foams_mfg_use_and_disposal", "hcfc_22_production", "magnesium_production", "nitric_and_adipic_acid_production", "photovoltaic_cell_manufacturing", "refrigeration_and_air_conditioning", "semiconductor_manufacturing", "solvent_use", "other_ip_ch4_and_n2o", "landfills", "wastewater", "other_waste_ch4_and_n2o"), # remove source columns
@@ -103,6 +106,7 @@ world_df_long <- world_df_long %>%
     source %in% c("aerosols", "aluminum_production", "electronic_power_systems", "fire_protection", "flat_panel_display_manufacturing", "foams_mfg_use_and_disposal", "hcfc_22_production", "magnesium_production", "nitric_and_adipic_acid_production", "photovoltaic_cell_manufacturing", "refrigeration_and_air_conditioning", "semiconductor_manufacturing", "solvent_use", "other_ip_ch4_and_n2o") ~ "industrial_processes",
     source %in% c("landfills", "wastewater", "other_waste_ch4_and_n2o") ~ "waste",
     TRUE ~ NA_character_)) # assign NA if any other source
+
 
 ```
 
@@ -134,32 +138,33 @@ world_df_long <- world_df_long %>%
 # edit names of sectors (for plotting)
 world_df_long <- world_df_long %>%
   mutate(sector = case_when(
-    sector == "agriculture" ~ "Agriculture",
-    sector == "energy" ~ "Energy",
-    sector == "industrial_processes" ~ "Industrial Processes",
-    sector == "waste" ~ "Waste",
+    sector == "agriculture" ~ "Agriculture (48%)",
+    sector == "energy" ~ "Energy (29%)",
+    sector == "waste" ~ "Waste (13%)",
+    sector == "industrial_processes" ~ "Industrial Processes (10%)",
     TRUE ~ sector))
 
-# Define a custom color palette
+# define a custom color palette
 custom_colors <- c(
-  "Agriculture" = "#1f77b4",
-  "Energy" = "#B22222",
-  "Industrial Processes" = "#FF8C00",
-  "Waste" = "#2ca02c")
+  "Agriculture (48%)" = "#1f77b4",
+  "Energy (29%)" = "#B22222",
+  "Waste (13%)" = "#2ca02c",
+  "Industrial Processes (10%)" = "#FF8C00")
+
+# re-order sector factors (for plotting)
+world_df_long <- world_df_long %>%
+   mutate(sector = factor(sector, levels = c("Agriculture (48%)", "Energy (29%)", "Waste (13%)", "Industrial Processes (10%)")))
 
 # create treemap
 ggplot(world_df_long, aes(area = source_emissions, fill = sector, label = source, subgroup = sector)) +
   geom_treemap() +
-  geom_treemap_text(color = "white", place = "centre", grow = TRUE, reflow = TRUE) +
+  geom_treemap_text(color = "white", place = "centre", grow = TRUE, reflow = TRUE, family = "barlow") +
   scale_fill_manual(values = custom_colors) +
-  labs(title = "What sources emitted the most methane in 2015?",
-     subtitle = "<span style='color:#1f77b4; letter-spacing: normal; word-spacing: normal;'>**Agriculture (52%)**</span>, <span style='color:#B22222; letter-spacing: normal; word-spacing: normal;'>**Energy (25%)**</span>, <span style='color:#2ca02c; letter-spacing: normal; word-spacing: normal;'>**Waste (16%)**</span>,<br>and <span style='color:#FF8C00; letter-spacing: normal; word-spacing: normal;'>**Industrial Processes (14%)**</span> are the four sectors of emission sources") +
-  theme(plot.subtitle = element_markdown()) +
-  theme(legend.position = "none")
-        # legend.title = element_blank(), 
-        # legend.text = element_text(size = 10, family = "outfit"),
-        # plot.title = element_text(face = "bold", size = 18, hjust = 0.5))
-  
+  labs(title = "What sources emitted the most methane in 2015?") +
+  theme(legend.position = "top",
+      legend.title = element_blank(), 
+      legend.text = element_text(size = 10, family = "barlow", face = "bold"),
+      plot.title = element_text(family = "merri sans", face = "bold", size = 12, hjust = 0.5))
 ```
 
 
@@ -177,11 +182,10 @@ pop_df <- pop_df %>%
 # join methane and population to make new data frame
 methane_pop_df <- left_join(x = methane_df, y = pop_df, by = "region") 
 
-# create column for per capita emissions 
+# create column for per capita emissions
 methane_pop_df <- methane_pop_df %>% 
   mutate(emissions_pc = total_emissions / population) %>% 
-  filter(!is.na(continent)) %>% # remove NAs to get rid of row for world total
-  select(-region, -continent, -country_name, -country_code_2, -year) # remove irrelevant columns
+  select(-region, -country_name, -country_code_2, -year) # remove irrelevant columns
 
 # create list of EU countries
 eu_countries <- c("Austria", "Belgium", "Bulgaria", "Croatia", "Cyprus", "Czech Republic", 
@@ -205,20 +209,69 @@ methane_pop_df <- rbind(eu_summary_df, methane_pop_df)
 top_countries <- methane_pop_df %>%
   arrange(desc(total_emissions)) %>%
   slice(1:6) %>% 
-  select("country", "agriculture", "energy", "industrial_processes", "waste")
+  select("country", "total_emissions", "emissions_pc", "population", "agriculture", "energy", "industrial_processes", "waste")
 
-# Convert the data to long format
-top_countries_long <- top_countries %>%
-  pivot_longer(cols = c("agriculture", "energy", "industrial_processes", "waste"), 
-               names_to = "sector", values_to = "emissions")
+
 
 ```
+
 
 
 ```{r}
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ##                          plot 2 visualization                            ----
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# define color palette
+country_colors <- c("United States" = "#020122", "Brazil" = "#020122", "Russia" = "#020122", "India" = "#020122", "European Union" = "#020122", "China" = "#020122")
+
+# create scatter plot
+ggplot(top_countries, aes(x = population, y = emissions_pc)) +
+  geom_point(aes(size = total_emissions, color = country)) +
+  scale_color_manual(values = country_colors) +
+  geom_text(data = top_countries,
+            aes(label = country, x = population, y = emissions_pc, size = total_emissions, color = country), hjust = -0.25, vjust = 2, size = 3, family = "barlow", fontface = "bold") +
+  scale_x_continuous(limits = c(0, 1500000000)) +
+  labs(x = "Population", y = "Per Capita Emissions (MtCO2eq)") +
+  labs(title = "53% of global methane emissions in 2015 came from\n5 highest-emitting countries and the European Union (27 countries)") + # format colored HTML text in subtitle
+  theme_minimal() +
+  theme(panel.grid.major = element_blank(), # remove major gridlines
+        panel.grid.minor = element_blank()) + # removes minor gridlines
+  theme(axis.title.x = element_text(family = "barlow", face = "bold", size = 10, color = "grey30"),
+        axis.title.y = element_text(family = "barlow", face = "bold", size = 10, color = "grey30"),
+        axis.text.x = element_text(family = "barlow", face = "bold"),
+        axis.text.y = element_text(family = "barlow", face = "bold")) +
+  theme(axis.line = element_line(color = "black", size = 0.5)) + # add axis line
+  theme(plot.title = element_text(family = "merri sans", size = 12, hjust = 0.5)) +
+  theme(legend.position = "none") +
+  annotate(
+    geom = "text",
+    x = 670000000, y = 0.000033,
+    label = "Size of circle represents\ntotal emissions in 2015",
+    hjust = "left",
+    size = 4,
+    family = "merri sans") + # create text annotation
+  annotate(
+    geom = "curve",
+    x = 650000000, xend = 420000000,
+    y = 0.000033, yend = 0.000042,
+    arrow = arrow(length = unit(0.3, "cm")),
+    curvature = -0.3,
+    size = 0.4) # create curved arrow
+```
+
+
+
+
+```{r}
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+##                          plot 3 visualization                            ----
+##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# convert the data to long format
+top_countries_long <- top_countries %>%
+  pivot_longer(cols = c("agriculture", "energy", "industrial_processes", "waste"), 
+               names_to = "sector", values_to = "emissions")
 
 # rename sectors (for plotting)
 top_countries_long <- top_countries_long %>% 
@@ -236,61 +289,35 @@ top_countries_long <- top_countries_long %>%
     country == "European Union" ~ "EU",
     TRUE ~ country))
 
+# re-order sectors as factors (for plotting)
+top_countries_long$sector <- factor(top_countries_long$sector, 
+                                    levels = c("Agriculture", "Energy", "Waste", "Industrial Processes"))
+
 # manually reorder the country factor (for plotting)
 top_countries_long$country <- factor(top_countries_long$country, 
                                      levels = c("China", "US", "Russia", "EU", "India", "Brazil"))
 
+# define custom color palette
+custom_colors <- c(
+  "Agriculture" = "#1f77b4",
+  "Energy" = "#B22222",
+  "Waste" = "#2ca02c",
+  "Industrial Processes" = "#FF8C00")
+
 ## create dodged column plot
 ggplot(top_countries_long, aes(x = country, y = emissions, fill = sector)) +
   geom_col(position = "dodge") +
-  labs(y = "Emissions (MtCO2eq)", title = "53% of global methane emissions in 2015 came\nfrom five countries and the European Union", fill = "Sector") +
+  labs(y = "Emissions (MtCO2eq)", title = "Sources of emissions in 5 highest-emitting\ncountries and the European Union", fill = "Sector") +
   scale_fill_manual(values = custom_colors) +
   theme_minimal() +
-  theme(axis.title.x = element_blank()) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-```
-
-
-```{r}
-##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-##                          plot 3 visualization                            ----
-##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-# define color palette
-country_colors <- c("United States" = "#1c7293", "Brazil" = "#8cb369", "Russia" = "#E9967A", "India" = "#ca3cff", "European Union" = "#020122", "China" = "#721817")
-
-# create scatter plot
-ggplot(top_countries, aes(x = population, y = emissions_pc)) +
-  geom_point(aes(size = total_emissions, color = country)) +
-  scale_color_manual(values = country_colors) +
-  geom_text(data = top_countries,
-            aes(label = country, x = population, y = emissions_pc, size = total_emissions, color = country), hjust = -0.15, vjust = 2, size = 3, fontface = "bold") +
-  scale_x_continuous(limits = c(0, 1500000000)) +
-  labs(x = "Population", y = "Per Capita Emissions (MtCO2eq)") +
-  labs(subtitle = "53% of global methane emissions in 2015 came from <span style='color:#721817;'>**China**</span>, the <span style='color:#1c7293;'>**United States**</span>,<br><span style='color:#E9967A;'>**Russia**</span>, the <span style='color:#020122;'>**European Union (27 countries)**</span>, <span style='color:#ca3cff;'>**India**</span>, and <span style='color:#8cb369;'>**Brazil**</span>") + # format colored HTML text in subtitle
-  theme_minimal() +
-  theme(plot.subtitle = element_text(size = 16)) + # change subtitle text size
-  theme(panel.grid.major = element_blank(), # remove major gridlines
-        panel.grid.minor = element_blank()) + # removes minor gridlines
-  theme(axis.title.x = element_text(size = 10, color = "grey30"),  # adjust x-axis text size and color
-        axis.title.y = element_text(size = 10, color = "grey30")) + # adjust y-axis text size and color
-  theme(axis.line = element_line(color = "black", size = 0.5)) + # add axis line
-  theme(plot.subtitle = element_markdown()) + # add so that HTML text shows up
-  theme(legend.position = "none") +
-  annotate(
-    geom = "text",
-    x = 670000000, y = 0.000033,
-    label = "Size of circle represents\ntotal emissions in 2015",
-    hjust = "left",
-    size = 4) + # create text annotation
-  annotate(
-    geom = "curve",
-    x = 650000000, xend = 420000000,
-    y = 0.000033, yend = 0.000042,
-    arrow = arrow(length = unit(0.3, "cm")),
-    curvature = -0.3,
-    size = 0.4) # create curved arrow
-
+  theme(axis.title.x = element_blank(),
+        axis.title.y = element_text(family = "barlow", face = "bold", color = "grey30"),
+        axis.text.x = element_text(family = "barlow", face = "bold"),
+        axis.text.y = element_text(family = "barlow", face = "bold"),
+        legend.position = c(0.85, 0.85),
+        legend.text = element_text(color = "grey30", face = "bold", size = 9, family = "barlow"),
+        legend.title = element_blank(),
+        plot.title = element_text(family = "merri sans", size = 12, hjust = 0.5))
 ```
 
 
